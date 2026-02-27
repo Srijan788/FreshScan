@@ -1,0 +1,42 @@
+
+  "expo":
+    "name": "FreshScan",
+    "slug": "freshscan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a08"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourname.freshscan",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FreshScan uses your camera to analyze food freshness.",
+        "NSPhotoLibraryUsageDescription": "FreshScan reads photos to analyze food freshness."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a08"
+      },
+      "package": "com.yourname.freshscan",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    }
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FreshScan reads your photos to analyze food freshness.",
+          "cameraPermission": "FreshScan uses your camera to analyze food freshness."
+        }
+      ]
+    ]
+   
