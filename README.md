@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 📱 FreshScan Mobile — iOS & Android App
 
 > Food freshness classifier — built with Expo (React Native)  
@@ -157,3 +158,6 @@ User opens app
 | Backend | FastAPI on Render.com |
 | Cloud Builds | Expo EAS Build (Free tier) |
 | Platforms | iOS + Android |
+=======
+# FreshScan
+>>>>>>> 36a711fee3f8f3857062ebf6c48bb11243b7b9a5

@@ -1,7 +1,8 @@
-
-  "expo":
+{
+  "expo": {
     "name": "FreshScan",
     "slug": "freshscan",
+    "sdkVersion": "54.0.0",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,11 +26,8 @@
         "backgroundColor": "#0a0a08"
       },
       "package": "com.yourname.freshscan",
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE"
-      ]
-    }
+      "permissions": ["CAMERA"]
+    },
     "plugins": [
       [
         "expo-image-picker",
@@ -37,6 +35,8 @@
           "photosPermission": "FreshScan reads your photos to analyze food freshness.",
           "cameraPermission": "FreshScan uses your camera to analyze food freshness."
         }
-      ]
+      ],
+      "expo-asset"
     ]
-   
+  }
+}

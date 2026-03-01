@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 // ⚠️ Replace with your Render backend URL
-const API_URL = 'https://YOUR-APP-NAME.onrender.com/analyze';
+const API_URL = 'https://freshscan-api-v38s.onrender.com/analyze';
 
 const { width } = Dimensions.get('window');
 
@@ -73,36 +73,54 @@ export default function App() {
     }
   }, []);
 
-  const analyze = useCallback(async () => {
-    if (!imageB64) return;
-    setLoading(true);
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: imageB64, media_type: 'image/jpeg' }),
-      });
+ const analyze = useCallback(async () => {
+  if (!imageUri) return;
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || `Server error ${response.status}`);
-      }
+  setLoading(true);
+  try {
+    const formData = new FormData();
 
-      const data: ScanResult = await response.json();
-      setResult(data);
+    formData.append('file', {
+      uri: imageUri,
+      name: 'image.jpg',
+      type: 'image/jpeg',
+    } as any);
 
-      if (imageUri) {
-        setHistory(prev => [
-          { uri: imageUri, verdict: data.verdict, id: Date.now() },
-          ...prev.slice(0, 5),
-        ]);
-      }
-    } catch (err: any) {
-      Alert.alert('Analysis failed', err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+    const response = await fetch("http://10.43.53.82:8000/analyze", {
+  method: 'POST',
+  body: formData,
+});
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `Server error ${response.status}`);
     }
-  }, [imageB64, imageUri]);
+
+    const data = await response.json();
+
+    // TEMP mapping because backend returns simple response
+    const mappedResult: ScanResult = {
+      verdict: data.freshness === 'fresh' ? 'fresh' : 'avoid',
+      confidence: Math.round(data.confidence * 100),
+      emoji: '🍎',
+      summary: `Detected ${data.fruit}. Looks ${data.freshness}.`,
+      tags: [data.fruit, data.freshness],
+    };
+
+    setResult(mappedResult);
+
+    if (imageUri) {
+      setHistory(prev => [
+        { uri: imageUri, verdict: mappedResult.verdict, id: Date.now() },
+        ...prev.slice(0, 5),
+      ]);
+    }
+  } catch (err: any) {
+    Alert.alert('Analysis failed', err.message);
+  } finally {
+    setLoading(false);
+  }
+}, [imageUri]);
 
   const reset = useCallback(() => {
     setImageUri(null);
