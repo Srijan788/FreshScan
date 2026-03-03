@@ -39,7 +39,7 @@ export default function App() {
       : ImagePicker.launchImageLibraryAsync;
 
     const picked = await launchFn({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],   // ✅ fixed: was ImagePicker.MediaTypeOptions.Images
       quality: 0.1,
       base64: false,
       allowsEditing: true,
