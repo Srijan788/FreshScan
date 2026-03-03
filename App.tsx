@@ -59,7 +59,7 @@ export default function App() {
 
     const picked = await launchFn({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
+      quality: 0.3,
       base64: true,
       allowsEditing: true,
       aspect: [1, 1],
