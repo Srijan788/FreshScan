@@ -22,8 +22,14 @@ PROMPT = """Analyze this food image and respond ONLY with a raw JSON object:
 {"verdict": "fresh" or "okay" or "avoid", "confidence": <integer 60-99>, "emoji": "<food emoji>", "summary": "<2-3 sentence analysis>", "tags": ["tag1", "tag2", "tag3", "tag4"]}"""
 
 @app.get("/")
-def health():
+@app.head("/")
+def root():
     return {"status": "FreshScan API is running"}
+
+@app.get("/health")
+@app.head("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/analyze")
 async def analyze(request: Request):
@@ -31,13 +37,11 @@ async def analyze(request: Request):
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
 
     body = await request.body()
-    
+
     try:
-        # Try JSON first
         data = json.loads(body)
         img_data = data.get("image_base64", "")
         media_type = data.get("media_type", "image/jpeg")
-        # Make sure it's valid base64
         base64.b64decode(img_data)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid request body")
@@ -50,12 +54,17 @@ async def analyze(request: Request):
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 512},
     }
 
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(
-            GEMINI_URL,
-            params={"key": GEMINI_API_KEY},
-            json=payload,
-        )
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                GEMINI_URL,
+                params={"key": GEMINI_API_KEY},
+                json=payload,
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Gemini request timed out")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Request failed: {str(e)}")
 
     if response.status_code != 200:
         raise HTTPException(status_code=502, detail=f"Gemini error: {response.text}")
