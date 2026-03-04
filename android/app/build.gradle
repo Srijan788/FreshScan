@@ -2,24 +2,15 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
-/**
- * React Native + Expo build configuration.
- * Uses static relative paths instead of dynamic node execution,
- * which is required for Gradle 9 / EAS cloud builds.
- */
 react {
-    entryFile     = file("../../node_modules/expo/AppEntry.js")
+    entryFile      = file("../../node_modules/expo/AppEntry.js")
     reactNativeDir = file("../../node_modules/react-native")
-    codegenDir    = file("../../node_modules/@react-native/codegen")
-    cliFile       = file("../../node_modules/@expo/cli/build/bin/cli")
-    bundleCommand = "export:embed"
-
-    enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
-
+    codegenDir     = file("../../node_modules/@react-native/codegen")
+    cliFile        = file("../../node_modules/@expo/cli/build/bin/cli")
+    bundleCommand  = "export:embed"
+    enableBundleCompression = false
     autolinkLibrariesWithApp()
 }
-
-def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
 
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
@@ -36,8 +27,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
-        buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL",
-            "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"stable\""
     }
 
     signingConfigs {
@@ -54,9 +44,6 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Using debug keystore for now.
-            // For production replace with a real keystore.
-            // See: https://reactnative.dev/docs/signed-apk-android
             signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -66,7 +53,7 @@ android {
 
     packagingOptions {
         jniLibs {
-            useLegacyPackaging (findProperty('expo.useLegacyPackaging') ?: 'false').toBoolean()
+            useLegacyPackaging false
         }
     }
 
@@ -75,32 +62,8 @@ android {
     }
 }
 
-// Apply packagingOptions from gradle.properties
-["pickFirsts", "excludes", "merges", "doNotStrip"].each { prop ->
-    def options = (findProperty("android.packagingOptions.$prop") ?: "").split(",")
-    options = options.collect { it.trim() }.findAll { !it.isEmpty() }
-    if (options.size() > 0) {
-        println "android.packagingOptions.$prop += $options"
-        options.each { android.packagingOptions[prop] += it }
-    }
-}
-
 dependencies {
     implementation("com.facebook.react:react-android")
-
-    def isGifEnabled   = (findProperty('expo.gif.enabled')   ?: "") == "true"
-    def isWebpEnabled  = (findProperty('expo.webp.enabled')  ?: "") == "true"
-    def isWebpAnimated = (findProperty('expo.webp.animated') ?: "") == "true"
-
-    if (isGifEnabled) {
-        implementation("com.facebook.fresco:animated-gif:${expoLibs.versions.fresco.get()}")
-    }
-    if (isWebpEnabled) {
-        implementation("com.facebook.fresco:webpsupport:${expoLibs.versions.fresco.get()}")
-        if (isWebpAnimated) {
-            implementation("com.facebook.fresco:animated-webp:${expoLibs.versions.fresco.get()}")
-        }
-    }
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
