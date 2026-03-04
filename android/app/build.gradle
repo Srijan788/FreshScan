@@ -58,9 +58,9 @@ android {
             // For production replace with a real keystore.
             // See: https://reactnative.dev/docs/signed-apk-android
             signingConfig signingConfigs.debug
-            minifyEnabled enableMinifyInReleaseBuilds
+            minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true').toBoolean()
+            crunchPngs false
         }
     }
 
