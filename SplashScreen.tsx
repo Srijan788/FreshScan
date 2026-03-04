@@ -150,10 +150,7 @@ export default function SplashScreen({ onFinish }: Props) {
 
         {/* By Srijan */}
         <Animated.View style={[styles.byWrap, { opacity: byOpacity, transform: [{ translateY: byY }] }]}>
-          <View style={styles.byChip}>
-            <Text style={styles.byText}>crafted by </Text>
-            <Text style={styles.byName}>Srijan</Text>
-          </View>
+          
         </Animated.View>
       </View>
 
