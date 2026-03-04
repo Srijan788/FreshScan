@@ -10,10 +10,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const API_URL = 'https://freshscan-api-v38s.onrender.com/analyze';
-const CLAUDE_URL = 'YOUR-API';
+const NUTRITION_URL = 'https://freshscan-api-v38s.onrender.com/nutrition';
 
 const VERDICT_CONFIG: any = {
   fresh: {
@@ -209,46 +208,30 @@ export default function App() {
   const [nutrition, setNutrition]     = useState<any>(null);
   const [nutritionLoading, setNutritionLoading] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
-  // Add this after your constants
-useEffect(() => {
-  fetch('https://freshscan-api-v38s.onrender.com')
-    .catch(() => {}); // silent wake-up ping
-}, []);
 
   // Fetch nutrition from Claude API based on food summary
   const fetchNutrition = useCallback(async (summary: string, tags: string[]) => {
     setNutritionLoading(true);
     setNutrition(null);
     try {
-      const prompt = `Based on this food analysis: "${summary}". Tags: ${tags.join(', ')}.
-Respond ONLY with a JSON object (no markdown, no extra text) like:
-{
-  "food_name": "Apple",
-  "calories": 52,
-  "protein": 0.3,
-  "carbs": 14,
-  "fat": 0.2,
-  "fiber": 2.4,
-  "highlights": ["Vitamin C", "Potassium", "Antioxidants"]
-}
-Estimate realistic nutrition per 100g. Keep highlights to 3 items max.`;
-
-      const res = await fetch(CLAUDE_URL, {
+      const res = await fetch(NUTRITION_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: JSON.stringify({ summary, tags }),
       });
+
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+
       const data = await res.json();
-      const text = data.content?.[0]?.text || '';
-      const clean = text.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
-      setNutrition(parsed);
-    } catch (e) {
-      // silently fail — nutrition is optional
+      setNutrition(data);
+    } catch (e: any) {
+      console.error('Nutrition fetch failed:', e.message);
+      setNutrition({
+        food_name: 'Unavailable',
+        calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0,
+        highlights: ['Could not estimate nutrition'],
+        error: true,
+      });
     } finally {
       setNutritionLoading(false);
     }
@@ -532,7 +515,7 @@ Estimate realistic nutrition per 100g. Keep highlights to 3 items max.`;
             <Text style={styles.footerText}>Built by </Text>
             <Text style={styles.footerName}>Srijan</Text>
             <View style={styles.footerDot} />
-            <Text style={styles.footerText}>FreshScan © 2025</Text>
+            <Text style={styles.footerText}>FreshScan © 2026</Text>
           </View>
         </FadeIn>
 
