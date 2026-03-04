@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = FastAPI(title="FreshScan API (Gemini)")
+app = FastAPI(title="FreshScan API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,17 +15,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = "gemini-1.5-flash"
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
-ANALYZE_PROMPT = """Analyze this food image and respond ONLY with a raw JSON object:
-{"verdict": "fresh" or "okay" or "avoid", "confidence": <integer 60-99>, "emoji": "<food emoji>", "summary": "<2-3 sentence analysis>", "tags": ["tag1", "tag2", "tag3", "tag4"]}"""
+ANALYZE_PROMPT = """You are a food freshness expert. Analyze this food image carefully.
+Respond ONLY with a raw JSON object, no markdown, no extra text:
+{"verdict": "fresh" or "okay" or "avoid", "confidence": <integer 60-99>, "emoji": "<food emoji>", "summary": "<2-3 sentence analysis of freshness>", "tags": ["tag1", "tag2", "tag3", "tag4"]}"""
 
-NUTRITION_PROMPT = """Based on this food analysis: "{summary}". Tags: {tags}.
+NUTRITION_PROMPT = """Based on this food analysis: "{summary}". Food tags: {tags}.
 Respond ONLY with a raw JSON object (no markdown, no extra text):
-{{"food_name": "<detected food name>", "calories": <integer>, "protein": <float>, "carbs": <float>, "fat": <float>, "fiber": <float>, "highlights": ["<nutrient1>", "<nutrient2>", "<nutrient3>"]}}
-Estimate realistic nutrition values per 100g serving."""
+{{"food_name": "<specific food name>", "calories": <integer>, "protein": <float>, "carbs": <float>, "fat": <float>, "fiber": <float>, "highlights": ["<vitamin/mineral 1>", "<vitamin/mineral 2>", "<vitamin/mineral 3>"]}}
+Provide realistic nutrition estimates per 100g serving."""
 
 
 @app.get("/")
@@ -42,8 +43,8 @@ def health():
 
 @app.post("/analyze")
 async def analyze(request: Request):
-    if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+    if not GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
 
     body = await request.body()
 
@@ -56,31 +57,49 @@ async def analyze(request: Request):
         raise HTTPException(status_code=400, detail="Invalid request body")
 
     payload = {
-        "contents": [{"parts": [
-            {"inline_data": {"mime_type": media_type, "data": img_data}},
-            {"text": ANALYZE_PROMPT}
-        ]}],
-        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 512},
+        "model": GROQ_MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{media_type};base64,{img_data}"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": ANALYZE_PROMPT
+                    }
+                ]
+            }
+        ],
+        "temperature": 0.2,
+        "max_tokens": 512,
     }
 
     try:
-        async with httpx.AsyncClient(timeout=90) as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
-                GEMINI_URL,
-                params={"key": GEMINI_API_KEY},
+                GROQ_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
                 json=payload,
             )
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Gemini request timed out")
+        raise HTTPException(status_code=504, detail="Request timed out")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Request failed: {str(e)}")
 
     if response.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"Gemini error: {response.text}")
+        raise HTTPException(status_code=502, detail=f"Groq error: {response.text}")
 
     data = response.json()
     try:
-        raw = data["candidates"][0]["content"]["parts"][0]["text"]
+        raw = data["choices"][0]["message"]["content"]
         raw = raw.strip().replace("```json", "").replace("```", "").strip()
         result = json.loads(raw)
     except Exception as e:
@@ -96,8 +115,8 @@ class NutritionRequest(BaseModel):
 
 @app.post("/nutrition")
 async def nutrition(req: NutritionRequest):
-    if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+    if not GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
 
     prompt = NUTRITION_PROMPT.format(
         summary=req.summary,
@@ -105,15 +124,22 @@ async def nutrition(req: NutritionRequest):
     )
 
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 300},
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 300,
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=20) as client:
             response = await client.post(
-                GEMINI_URL,
-                params={"key": GEMINI_API_KEY},
+                GROQ_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
                 json=payload,
             )
     except httpx.TimeoutException:
@@ -122,11 +148,11 @@ async def nutrition(req: NutritionRequest):
         raise HTTPException(status_code=502, detail=f"Request failed: {str(e)}")
 
     if response.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"Gemini error: {response.text}")
+        raise HTTPException(status_code=502, detail=f"Groq error: {response.text}")
 
     data = response.json()
     try:
-        raw = data["candidates"][0]["content"]["parts"][0]["text"]
+        raw = data["choices"][0]["message"]["content"]
         raw = raw.strip().replace("```json", "").replace("```", "").strip()
         result = json.loads(raw)
     except Exception as e:
