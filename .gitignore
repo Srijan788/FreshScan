@@ -2,3 +2,7 @@ node_modules/
 __pycache__/
 .env
 android/.gradle/
+
+android/app/autolinking.json
+
+android/build/
