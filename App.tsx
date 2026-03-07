@@ -3,7 +3,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Image,
   ScrollView, ActivityIndicator, Alert, Platform,
-  Animated, Dimensions, Easing,
+  Animated, Dimensions, Easing, Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -509,13 +509,23 @@ export default function App() {
           </FadeIn>
         )}
 
-        {/* ── FOOTER ── */}
+       {/* ── FOOTER ── */}
         <FadeIn delay={200}>
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Built by </Text>
-            <Text style={styles.footerName}>Srijan</Text>
-            <View style={styles.footerDot} />
             <Text style={styles.footerText}>FreshScan © 2026</Text>
+            <View style={styles.footerDot} />
+            <TouchableOpacity
+              onPress={() => Linking.openURL('https://instagram.com/webzenithh')}
+              style={styles.instaBtn}
+              activeOpacity={0.75}>
+              <LinearGradient
+                colors={['#f09433','#e6683c','#dc2743','#cc2366','#bc1888']}
+                start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }}
+                style={styles.instaBtnGrad}>
+                <Ionicons name="logo-instagram" size={13} color="#fff" />
+                <Text style={styles.instaBtnText}>@webzenithh</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </FadeIn>
 
@@ -660,4 +670,7 @@ const styles = StyleSheet.create({
   footerText: { fontSize: 10, color: '#2a2c24', letterSpacing: 0.5 },
   footerName: { fontSize: 10, color: '#d4f576', letterSpacing: 0.5, fontWeight: '700' },
   footerDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#2a2c24' },
+  instaBtn: { borderRadius: 999, overflow: 'hidden' },
+  instaBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5 },
+  instaBtnText: { fontSize: 10, color: '#fff', fontWeight: '700', letterSpacing: 0.5 },
 });
