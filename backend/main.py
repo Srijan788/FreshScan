@@ -28,6 +28,13 @@ Respond ONLY with a raw JSON object (no markdown, no extra text):
 {{"food_name": "<specific food name>", "calories": <integer>, "protein": <float>, "carbs": <float>, "fat": <float>, "fiber": <float>, "highlights": ["<vitamin/mineral 1>", "<vitamin/mineral 2>", "<vitamin/mineral 3>"]}}
 Provide realistic nutrition estimates per 100g serving."""
 
+ADULTERATION_PROMPT = """Analyze this food image for adulteration. Respond ONLY with a raw JSON object, no markdown, no extra text:
+{"status": "safe", "risk_level": "LOW", "food_type": "<name of food detected>", "summary": "<2-3 sentence analysis>", "adulterants": ["<possible adulterant 1>", "<possible adulterant 2>"], "home_tests": ["<simple home test 1>", "<simple home test 2>"]}
+status must be exactly one of: safe, suspect, adulterated
+risk_level must be exactly one of: LOW, MEDIUM, HIGH
+adulterants should be empty array [] if status is safe
+home_tests should always have 2 simple tests the user can do at home"""
+
 
 @app.get("/")
 @app.head("/")
@@ -144,6 +151,73 @@ async def nutrition(req: NutritionRequest):
             )
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Nutrition request timed out")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Request failed: {str(e)}")
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Groq error: {response.text}")
+
+    data = response.json()
+    try:
+        raw = data["choices"][0]["message"]["content"]
+        raw = raw.strip().replace("```json", "").replace("```", "").strip()
+        result = json.loads(raw)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Parse error: {e}")
+
+    return result
+
+
+@app.post("/adulteration")
+async def adulteration(request: Request):
+    if not GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+
+    body = await request.body()
+
+    try:
+        data = json.loads(body)
+        img_data = data.get("image_base64", "")
+        media_type = data.get("media_type", "image/jpeg")
+        base64.b64decode(img_data)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request body")
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{media_type};base64,{img_data}"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": ADULTERATION_PROMPT
+                    }
+                ]
+            }
+        ],
+        "temperature": 0.2,
+        "max_tokens": 500,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                GROQ_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Request timed out")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Request failed: {str(e)}")
 
