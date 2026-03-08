@@ -208,6 +208,7 @@ export default function App() {
   const [nutrition, setNutrition]     = useState<any>(null);
   const [nutritionLoading, setNutritionLoading] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
+  const [kidsMode, setKidsMode] = useState(false);
 
   // Fetch nutrition from Claude API based on food summary
   const fetchNutrition = useCallback(async (summary: string, tags: string[]) => {
@@ -330,6 +331,15 @@ export default function App() {
               <View style={styles.versionChip}>
                 <Text style={styles.versionText}>v2.0</Text>
               </View>
+            <TouchableOpacity
+               style={[styles.kidsModeBtn, kidsMode && styles.kidsModeBtnActive]}
+               onPress={() => setKidsMode(!kidsMode)}
+               activeOpacity={0.8}>
+               <Text style={styles.kidsModeIcon}>👶</Text>
+               <Text style={[styles.kidsModeTxt, kidsMode && styles.kidsModeTxtActive]}>
+                 {kidsMode ? 'KIDS ON' : 'KIDS'}
+               </Text>
+             </TouchableOpacity>
             </View>
             <Text style={styles.title}>
               <Text style={styles.titleThin}>Fresh</Text>
@@ -427,6 +437,30 @@ export default function App() {
         )}
 
         {/* ── RESULT CARD ── */}
+        {result && kidsMode && (
+  <FadeIn delay={0}>
+    <View style={styles.kidsCard}>
+      <Text style={styles.kidsEmoji}>
+        {result.verdict === 'fresh' ? '😋' : result.verdict === 'okay' ? '⚠️' : '🙅'}
+      </Text>
+      <Text style={styles.kidsVerdict}>
+        {result.verdict === 'fresh' ? 'Yummy!' : result.verdict === 'okay' ? 'Be Careful!' : 'No No!'}
+      </Text>
+      <Text style={styles.kidsMsg}>
+        {result.verdict === 'fresh'
+          ? 'This food looks super fresh and healthy! Go ahead! 🌟'
+          : result.verdict === 'okay'
+          ? 'This food is okay but not the best. Eat a little! 🌈'
+          : 'This food does not look good. Ask a grown-up! 🚫'}
+      </Text>
+      <View style={styles.kidsStars}>
+        {Array.from({ length: result.verdict === 'fresh' ? 5 : result.verdict === 'okay' ? 3 : 1 }).map((_, i) => (
+          <Text key={i} style={styles.kidsStar}>⭐</Text>
+        ))}
+      </View>
+    </View>
+  </FadeIn>
+)}
         {result && config && (
           <FadeIn delay={0}>
             <View style={styles.resultCard}>
@@ -673,4 +707,15 @@ const styles = StyleSheet.create({
   instaBtn: { borderRadius: 999, overflow: 'hidden' },
   instaBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5 },
   instaBtnText: { fontSize: 10, color: '#fff', fontWeight: '700', letterSpacing: 0.5 },
+  kidsModeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1a1a14', borderWidth: 1, borderColor: '#2a2c24', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  kidsModeBtnActive: { backgroundColor: 'rgba(255,200,0,0.15)', borderColor: 'rgba(255,200,0,0.5)' },
+  kidsModeIcon: { fontSize: 12 },
+  kidsModeTxt: { fontSize: 9, color: '#555', letterSpacing: 1, fontWeight: '700' },
+  kidsModeTxtActive: { color: '#ffd700' },
+  kidsCard: { borderRadius: 24, backgroundColor: '#0f1a08', borderWidth: 2, borderColor: 'rgba(255,200,0,0.3)', padding: 32, alignItems: 'center', marginBottom: 16 },
+  kidsEmoji: { fontSize: 80, marginBottom: 16 },
+  kidsVerdict: { fontSize: 36, fontWeight: '900', color: '#ffd700', letterSpacing: -1, marginBottom: 12 },
+  kidsMsg: { fontSize: 16, color: '#9a9888', textAlign: 'center', lineHeight: 26, marginBottom: 20 },
+  kidsStars: { flexDirection: 'row', gap: 4 },
+  kidsStar: { fontSize: 24 },  
 });
