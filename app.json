@@ -19,12 +19,16 @@
       },
       "permissions": [
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "plugins": [
       "expo-image-picker",
       "expo-asset"
     ],
+    "updates": {
+      "url": "https://u.expo.dev/bebcda3b-2593-44a9-ac93-f44bb4715584"
+    },
     "extra": {
       "eas": {
         "projectId": "bebcda3b-2593-44a9-ac93-f44bb4715584"
