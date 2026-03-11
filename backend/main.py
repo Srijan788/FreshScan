@@ -233,3 +233,63 @@ async def adulteration(request: Request):
         raise HTTPException(status_code=502, detail=f"Parse error: {e}")
 
     return result
+
+
+@app.post("/medicine")
+async def medicine(request: Request):
+    if not GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+
+    body = await request.body()
+    try:
+        data = json.loads(body)
+        food_summary = data.get("food_summary", "")
+        food_tags = data.get("food_tags", [])
+        medicines = data.get("medicines", [])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request body")
+
+    if not medicines:
+        return {"has_interaction": False, "summary": "No medicines to check.", "interactions": []}
+
+    prompt = f"""You are a medical food interaction expert.
+Food scanned: {food_summary}
+Food tags: {', '.join(food_tags)}
+Patient's medicines: {', '.join(medicines)}
+
+Check if any of these medicines have known interactions with this food.
+Respond ONLY with raw JSON, no markdown:
+{{"has_interaction": true or false, "summary": "1-2 sentence overall summary", "interactions": [{{"medicine": "medicine name", "warning": "specific warning"}}]}}
+Only include medicines that actually have interactions. If none, return empty interactions array."""
+
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.1,
+        "max_tokens": 400,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(
+                GROQ_URL,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json=payload,
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Request timed out")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Request failed: {str(e)}")
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Groq error: {response.text}")
+
+    data = response.json()
+    try:
+        raw = data["choices"][0]["message"]["content"]
+        raw = raw.strip().replace("```json", "").replace("```", "").strip()
+        result = json.loads(raw)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Parse error: {e}")
+
+    return result
