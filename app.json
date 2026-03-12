@@ -18,7 +18,6 @@
         "backgroundColor": "#0a0a08"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ],
       "runtimeVersion": "1.0.0"
@@ -32,10 +31,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "bebcda3b-2593-44a9-ac93-f44bb4715584"
+        "projectId": "7ad31f0b-823d-415b-b50b-4c83088c349a"
       }
     },
-    "owner": "srijan045",
+    "owner": "srijan044",
     "ios": {
       "runtimeVersion": {
         "policy": "appVersion"
