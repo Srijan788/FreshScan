@@ -3,9 +3,15 @@
     "name": "FreshScan",
     "slug": "freshscan",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "updates": {
+      "enabled": true,
+      "url": "https://u.expo.dev/7ad31f0b-823d-415b-b50b-4c83088c349a",
+      "fallbackToCacheTimeout": 0
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -18,28 +24,15 @@
         "backgroundColor": "#0a0a08"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
-      ],
-      "runtimeVersion": "1.0.0"
+      ]
     },
-    "plugins": [
-      "expo-image-picker",
-      "expo-asset"
-    ],
-    "updates": {
-      "url": "https://u.expo.dev/7ad31f0b-823d-415b-b50b-4c83088c349a"
-    },
+    "plugins": ["expo-image-picker", "expo-asset"],
     "extra": {
       "eas": {
         "projectId": "7ad31f0b-823d-415b-b50b-4c83088c349a"
       }
     },
-    "owner": "srijan044",
-    "ios": {
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
-    }
+    "owner": "srijan044"
   }
 }

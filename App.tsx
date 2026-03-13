@@ -244,7 +244,10 @@ function AdulterationScreen() {
             <Text style={styles.adulterationHeroEmoji}>🔬</Text>
             <Text style={styles.adulterationHeroTitle}>Food Adulteration{'\n'}Detector</Text>
             <Text style={styles.adulterationHeroSub}>AI checks for chalk, brick powder, artificial colors,{'\n'}stones, pesticides & more in your food</Text>
-           
+            <View style={styles.adulterationWarningChip}>
+              <Ionicons name="shield-checkmark-outline" size={12} color="#f87171" />
+              <Text style={styles.adulterationWarningText}>POWERED BY GROQ AI</Text>
+            </View>
           </LinearGradient>
         </View>
       </FadeIn>
@@ -721,7 +724,7 @@ export default function App() {
           ) : (
             <FadeIn delay={0}>
               <View style={styles.previewWrap}>
-                <Image source={{ uri: imageUri }} style={styles.previewImg} />
+                <Image source={{ uri: imageUri! }} style={styles.previewImg} />
                 <LinearGradient colors={['rgba(6,6,4,0)', 'rgba(6,6,4,0.7)']} style={styles.previewOverlay} />
                 {loading && <ScanLine />}
                 {loading && (
@@ -743,12 +746,13 @@ export default function App() {
             <FadeIn delay={80}>
               <TouchableOpacity style={[styles.analyzeBtn, loading && styles.analyzeBtnLoading]} onPress={analyze} disabled={loading} activeOpacity={0.85}>
                 {loading ? (
-                  <LinearGradient colors={['#141c0e', '#0e1408']} style={styles.analyzeBtnInner}>
+                  <LinearGradient colors={['rgba(212,245,118,0.08)','rgba(212,245,118,0.02)']} style={styles.analyzeBtnInner}>
                     <ActivityIndicator color="#d4f576" size="small" />
                     <Text style={styles.analyzeBtnTextLoading}>Processing image…</Text>
                   </LinearGradient>
                 ) : (
-                  <LinearGradient colors={['#d4f576', '#b8df50']} style={styles.analyzeBtnInner}>
+                  <LinearGradient colors={['rgba(212,245,118,0.95)','rgba(184,223,80,0.9)']} style={styles.analyzeBtnInner}>
+                    <View style={styles.analyzeBtnGlow} />
                     <Ionicons name="flash" size={18} color="#0a0f05" />
                     <Text style={styles.analyzeBtnText}>Analyze Freshness</Text>
                   </LinearGradient>
@@ -776,10 +780,16 @@ export default function App() {
 
           {result && config && (
             <FadeIn delay={0}>
-              <View style={styles.resultCard}>
+              <View style={[styles.resultCard, { borderColor: config.border, shadowColor: config.color }]}>
+                <LinearGradient colors={['rgba(255,255,255,0.06)','rgba(255,255,255,0.01)']} style={StyleSheet.absoluteFillObject} />
                 <LinearGradient colors={config.gradient} style={StyleSheet.absoluteFillObject} />
+                {/* Glass shimmer */}
+                <LinearGradient colors={[config.color+'99','transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.resultGlassTopBorder} />
+                {/* Glow blob behind grade */}
+                <View style={[styles.resultGlowBlob, { backgroundColor: config.color }]} />
                 <View style={styles.resultTop}>
-                  <View style={[styles.gradeCircle, { borderColor: config.border }]}>
+                  <View style={[styles.gradeCircle, { borderColor: config.border, shadowColor: config.color }]}>
+                    <LinearGradient colors={[config.color+'22', config.color+'08']} style={[StyleSheet.absoluteFillObject, { borderRadius: 32 }]} />
                     <Text style={[styles.gradeText, { color: config.color }]}>{config.grade}</Text>
                   </View>
                   <View style={styles.resultTopInfo}>
@@ -788,7 +798,7 @@ export default function App() {
                       <Text style={[styles.verdictLabel, { color: config.color }]}>{config.label}</Text>
                     </View>
                     <View style={styles.confidenceRow}>
-                      <Text style={styles.confidenceNum}>{result.confidence}</Text>
+                      <Text style={[styles.confidenceNum, { color: config.color }]}>{result.confidence}</Text>
                       <Text style={styles.confidencePct}>%</Text>
                       <Text style={styles.confidenceLabel}> confidence</Text>
                     </View>
@@ -804,7 +814,7 @@ export default function App() {
                     <Text style={styles.sectionLabel}>DETECTED INDICATORS</Text>
                     <View style={styles.tagsWrap}>
                       {result.tags.map((tag: any, i: any) => (
-                        <View key={i} style={[styles.tag, { borderColor: config.border }]}>
+                        <View key={i} style={[styles.tag, { borderColor: config.border, backgroundColor: config.bg }]}>
                           <Text style={[styles.tagText, { color: config.color }]}>◦ {tag}</Text>
                         </View>
                       ))}
@@ -943,6 +953,7 @@ const styles = StyleSheet.create({
   uploadIconWrap: { position: 'relative', marginBottom: 20, alignItems: 'center', justifyContent: 'center' },
   uploadIconGrad: { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2a3520' },
   uploadIconRing: { position: 'absolute', width: 90, height: 90, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(212,245,118,0.12)', borderStyle: 'dashed' },
+  uploadIconRing2: { position: 'absolute', width: 112, height: 112, borderRadius: 34, borderWidth: 1, borderColor: 'rgba(212,245,118,0.06)' },
   uploadEmoji: { fontSize: 30 },
   uploadTitle: { fontSize: 20, fontWeight: '700', color: '#e8e5dc', marginBottom: 6, letterSpacing: -0.3 },
   uploadHint: { fontSize: 11, color: '#3a3c34', marginBottom: 28, letterSpacing: 0.5 },
@@ -967,21 +978,24 @@ const styles = StyleSheet.create({
   scanBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#d4f576' },
   scanBadgeText: { fontSize: 9, color: '#d4f576', letterSpacing: 2, fontWeight: '700' },
   clearBtn: { position: 'absolute', top: 12, right: 12, width: 30, height: 30, backgroundColor: 'rgba(6,6,4,0.7)', borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  analyzeBtn: { borderRadius: 16, overflow: 'hidden', marginBottom: 24 },
-  analyzeBtnLoading: { borderWidth: 1, borderColor: '#1e2018' },
-  analyzeBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 18 },
-  analyzeBtnText: { color: '#0a0f05', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
-  analyzeBtnTextLoading: { color: '#4a5040', fontSize: 15, fontWeight: '500' },
-  resultCard: { borderWidth: 1, borderColor: '#1e2018', borderRadius: 24, overflow: 'hidden', marginBottom: 16, position: 'relative' },
+  analyzeBtn: { borderRadius: 20, overflow: 'hidden', marginBottom: 24, shadowColor: '#d4f576', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 },
+  analyzeBtnLoading: { borderWidth: 1, borderColor: 'rgba(212,245,118,0.15)' },
+  analyzeBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 20, position: 'relative', overflow: 'hidden' },
+  analyzeBtnGlow: { position: 'absolute', top: -20, width: 120, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.15)' },
+  analyzeBtnText: { color: '#0a0f05', fontSize: 16, fontWeight: '900', letterSpacing: 0.5 },
+  analyzeBtnTextLoading: { color: '#d4f576', fontSize: 15, fontWeight: '500' },
+  resultCard: { borderWidth: 1, borderColor: '#1e2018', borderRadius: 28, overflow: 'hidden', marginBottom: 16, position: 'relative', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 24, elevation: 12 },
+  resultGlassTopBorder: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, zIndex: 10 },
+  resultGlowBlob: { position: 'absolute', top: -40, left: -20, width: 140, height: 140, borderRadius: 70, opacity: 0.08 },
   resultTop: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 24 },
-  gradeCircle: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(6,6,4,0.6)' },
+  gradeCircle: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(6,6,4,0.4)', overflow: 'hidden', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 12, elevation: 6 },
   gradeText: { fontSize: 28, fontWeight: '900', letterSpacing: -1 },
   resultTopInfo: { flex: 1, gap: 10 },
   verdictChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
   verdictIcon: { fontSize: 12 },
   verdictLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 2 },
   confidenceRow: { flexDirection: 'row', alignItems: 'baseline' },
-  confidenceNum: { fontSize: 32, fontWeight: '900', color: '#e8e5dc', letterSpacing: -1 },
+  confidenceNum: { fontSize: 36, fontWeight: '900', color: '#e8e5dc', letterSpacing: -1 },
   confidencePct: { fontSize: 16, fontWeight: '700', color: '#4a5040' },
   confidenceLabel: { fontSize: 11, color: '#3a3c34', letterSpacing: 0.5 },
   resultDivider: { height: 1, marginHorizontal: 24, marginBottom: 20, opacity: 0.4 },
