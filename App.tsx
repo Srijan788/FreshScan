@@ -244,10 +244,7 @@ function AdulterationScreen() {
             <Text style={styles.adulterationHeroEmoji}>🔬</Text>
             <Text style={styles.adulterationHeroTitle}>Food Adulteration{'\n'}Detector</Text>
             <Text style={styles.adulterationHeroSub}>AI checks for chalk, brick powder, artificial colors,{'\n'}stones, pesticides & more in your food</Text>
-            <View style={styles.adulterationWarningChip}>
-              <Ionicons name="shield-checkmark-outline" size={12} color="#f87171" />
-              <Text style={styles.adulterationWarningText}>POWERED BY GROQ AI</Text>
-            </View>
+           
           </LinearGradient>
         </View>
       </FadeIn>
