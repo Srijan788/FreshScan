@@ -244,10 +244,7 @@ function AdulterationScreen() {
             <Text style={styles.adulterationHeroEmoji}>🔬</Text>
             <Text style={styles.adulterationHeroTitle}>Food Adulteration{'\n'}Detector</Text>
             <Text style={styles.adulterationHeroSub}>AI checks for chalk, brick powder, artificial colors,{'\n'}stones, pesticides & more in your food</Text>
-            <View style={styles.adulterationWarningChip}>
-              <Ionicons name="shield-checkmark-outline" size={12} color="#f87171" />
-              <Text style={styles.adulterationWarningText}>POWERED BY GROQ AI</Text>
-            </View>
+           
           </LinearGradient>
         </View>
       </FadeIn>
@@ -642,7 +639,7 @@ export default function App() {
               <Text style={styles.logoChipText}>LIVE ANALYSIS</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={styles.versionChip}><Text style={styles.versionText}>v2.1</Text></View>
+              <View style={styles.versionChip}><Text style={styles.versionText}>v2.2</Text></View>
               <TouchableOpacity style={[styles.kidsModeBtn, kidsMode && styles.kidsModeBtnActive]} onPress={() => setKidsMode(!kidsMode)} activeOpacity={0.8}>
                 <Text style={styles.kidsModeIcon}>👶</Text>
                 <Text style={[styles.kidsModeTxt, kidsMode && styles.kidsModeTxtActive]}>{kidsMode ? 'KIDS ON' : 'KIDS'}</Text>

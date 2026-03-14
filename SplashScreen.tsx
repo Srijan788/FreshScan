@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, Animated, Easing, Dimensions, Platform } from '
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: W, height: H } = Dimensions.get('window');
+const ORB = 160;
+const RING1 = 210;
+const RING2 = 290;
 interface Props { onFinish: () => void; }
 
 function Particle({ delay, x }: { delay: number; x: number }) {
@@ -35,23 +38,14 @@ function Particle({ delay, x }: { delay: number; x: number }) {
 
 function HexRing({ scale, spin, opacity }: { scale: Animated.Value; spin: Animated.Value; opacity: Animated.Value }) {
   const rot = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const SIDES = 8;
   return (
-    <Animated.View style={{ width: 220, height: 220, alignItems: 'center', justifyContent: 'center', opacity, transform: [{ scale }, { rotate: rot }] }}>
-      {Array.from({ length: SIDES }).map((_, i) => {
-        const angle = (i / SIDES) * Math.PI * 2;
-        const tx = Math.cos(angle) * 100;
-        const ty = Math.sin(angle) * 100;
-        return (
-          <View key={i} style={{
-            position: 'absolute', width: 10, height: 10, borderRadius: 2,
-            backgroundColor: 'rgba(212,245,118,0.5)',
-            transform: [{ translateX: tx }, { translateY: ty }],
-          }} />
-        );
-      })}
-      <View style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(212,245,118,0.2)', borderStyle: 'dashed' }} />
-    </Animated.View>
+    <Animated.View style={{
+      position: 'absolute',
+      width: RING1, height: RING1, borderRadius: RING1 / 2,
+      borderWidth: 1.5, borderColor: 'rgba(212,245,118,0.4)',
+      borderStyle: 'dashed',
+      opacity, transform: [{ scale }, { rotate: rot }],
+    }} />
   );
 }
 
@@ -225,10 +219,6 @@ export default function SplashScreen({ onFinish }: Props) {
   );
 }
 
-const ORB = 160;
-const RING1 = 210;
-const RING2 = 290;
-
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030403', zIndex: 999, alignItems: 'center', justifyContent: 'center' },
   gridV: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.015)' },
@@ -236,7 +226,7 @@ const styles = StyleSheet.create({
   stage: { width: RING2 + 20, height: RING2 + 20, alignItems: 'center', justifyContent: 'center', marginBottom: 32 },
   ringOuter: { position: 'absolute', width: RING2, height: RING2, borderRadius: RING2 / 2, borderWidth: 1, borderColor: 'rgba(212,245,118,0.08)', borderStyle: 'dashed' },
   ringMid: { position: 'absolute', width: RING1, height: RING1, borderRadius: RING1 / 2, borderWidth: 1, borderColor: 'rgba(212,245,118,0.25)' },
-  orbWrap: { alignItems: 'center', justifyContent: 'center' },
+  orbWrap: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   orbGlow3: { position: 'absolute', width: ORB + 80, height: ORB + 80, borderRadius: (ORB + 80) / 2, backgroundColor: 'rgba(212,245,118,0.03)' },
   orbGlow2: { position: 'absolute', width: ORB + 44, height: ORB + 44, borderRadius: (ORB + 44) / 2, backgroundColor: 'rgba(212,245,118,0.05)' },
   orbGlow1: { position: 'absolute', width: ORB + 18, height: ORB + 18, borderRadius: (ORB + 18) / 2, backgroundColor: 'rgba(212,245,118,0.09)' },
@@ -251,7 +241,7 @@ const styles = StyleSheet.create({
   brkBR: { bottom: 10, right: 10, borderBottomWidth: 2, borderRightWidth: 2 },
   textSection: { alignItems: 'center', gap: 12, marginBottom: 52 },
   title: { fontSize: 54, letterSpacing: -2, lineHeight: 58, textAlign: 'center' },
-  titleThin: { color: '#2e3828', fontWeight: '200' },
+  titleThin: { color: '#4a5a3a', fontWeight: '200' },
   titleBold: { color: '#d4f576', fontWeight: '900', fontStyle: 'italic' },
   titleUnderline: { width: 36, height: 2, backgroundColor: '#d4f576', borderRadius: 1, marginTop: 8, marginBottom: 4 },
   tagline: { fontSize: 9, color: '#2e3828', letterSpacing: 3, fontWeight: '700' },
