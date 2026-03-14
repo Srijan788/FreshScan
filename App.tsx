@@ -53,6 +53,59 @@ const ADULTERATION_CONFIG: any = {
   },
 };
 
+const MEDICINE_SUGGESTIONS = [
+  'Paracetamol',
+  'Metformin',
+  'Aspirin',
+  'Atorvastatin',
+  'Levothyroxine',
+  'Amlodipine',
+  'Losartan',
+  'Telmisartan',
+  'Omeprazole',
+  'Pantoprazole',
+  'Ranitidine',
+  'Azithromycin',
+  'Amoxicillin',
+  'Doxycycline',
+  'Cetirizine',
+  'Montelukast',
+  'Salbutamol',
+  'Insulin',
+  'Glimepiride',
+  'Sitagliptin',
+  'Clopidogrel',
+  'Warfarin',
+  'Apixaban',
+  'Hydrochlorothiazide',
+  'Furosemide',
+  'Prednisolone',
+  'Ibuprofen',
+  'Diclofenac',
+  'Naproxen',
+  'Iron tablets',
+  'Calcium supplements',
+  'Vitamin D3',
+  'Vitamin B12',
+  'Thyroxine',
+  'Lisinopril',
+  'Bisoprolol',
+  'Propranolol',
+  'Gabapentin',
+  'Pregabalin',
+  'Sertraline',
+  'Escitalopram',
+  'Fluoxetine',
+  'Alprazolam',
+  'Clonazepam',
+  'Ondansetron',
+  'Domperidone',
+  'Metoclopramide',
+  'Mefenamic acid',
+  'Tramadol',
+  'Acetaminophen',
+];
+
 function NutritionBar({ value, max, color }: { value: number; max: number; color: string }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -426,6 +479,10 @@ function MedicineScreen() {
   const addMedicine = useCallback(async () => {
     const name = inputText.trim();
     if (!name) return;
+    if (medicines.some((m) => m.toLowerCase() === name.toLowerCase())) {
+      setInputText('');
+      return;
+    }
     const updated = [...medicines, name];
     setMedicines(updated);
     setInputText('');
@@ -437,6 +494,18 @@ function MedicineScreen() {
     setMedicines(updated);
     await AsyncStorage.setItem('medicines', JSON.stringify(updated));
   }, [medicines]);
+
+  const normalizedInput = inputText.trim().toLowerCase();
+  const filteredSuggestions = normalizedInput.length === 0
+    ? []
+    : MEDICINE_SUGGESTIONS
+        .filter((name) => name.toLowerCase().includes(normalizedInput))
+        .filter((name) => !medicines.some((m) => m.toLowerCase() === name.toLowerCase()))
+        .slice(0, 6);
+
+  const pickSuggestion = useCallback((name: string) => {
+    setInputText(name);
+  }, []);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={[styles.scrollContent, { paddingTop: 16 }]} showsVerticalScrollIndicator={false}>
@@ -475,6 +544,16 @@ function MedicineScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+            {filteredSuggestions.length > 0 && (
+              <View style={styles.medicineSuggestBox}>
+                {filteredSuggestions.map((name) => (
+                  <TouchableOpacity key={name} style={styles.medicineSuggestItem} onPress={() => pickSuggestion(name)} activeOpacity={0.75}>
+                    <Ionicons name="search-outline" size={13} color="#a78bfa" />
+                    <Text style={styles.medicineSuggestText}>{name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             {medicines.length === 0 ? (
               <View style={styles.medicineEmpty}>
                 <Text style={styles.medicineEmptyIcon}>💊</Text>
@@ -588,6 +667,17 @@ export default function App() {
     } finally { setNutritionLoading(false); }
   }, []);
 
+  const uriToBase64 = useCallback(async (uri: string) => {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    const base64: string = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.readAsDataURL(blob);
+    });
+    return base64;
+  }, []);
+
   const pickImage = useCallback(async (source: string) => {
     const permFn = source === 'camera' ? ImagePicker.requestCameraPermissionsAsync : ImagePicker.requestMediaLibraryPermissionsAsync;
     const { status } = await permFn();
@@ -596,17 +686,26 @@ export default function App() {
     const picked = await launchFn({ mediaTypes: ['images'], quality: 0.1, base64: false, allowsEditing: true, aspect: [1, 1] });
     if (!picked.canceled && picked.assets[0]) {
       const uri = picked.assets[0].uri;
-      const res = await fetch(uri); const blob = await res.blob();
-      const base64: string = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve((reader.result as string).split(',')[1]); reader.readAsDataURL(blob); });
-      setImageUri(uri); setImageB64(base64); setResult(null); setNutrition(null);
+      // Show selected image instantly, then prepare base64 in background.
+      setImageUri(uri);
+      setImageB64(null);
+      setResult(null);
+      setNutrition(null);
+      setMedicineResult(null);
+      void uriToBase64(uri)
+        .then((base64) => setImageB64(base64))
+        .catch(() => setImageB64(null));
     }
-  }, []);
+  }, [uriToBase64]);
 
   const analyze = useCallback(async () => {
-    if (!imageB64) return;
+    if (!imageUri) return;
     setLoading(true);
     try {
-      const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_base64: imageB64, media_type: 'image/jpeg' }) });
+      const base64 = imageB64 || await uriToBase64(imageUri);
+      if (!imageB64) setImageB64(base64);
+
+      const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_base64: base64, media_type: 'image/jpeg' }) });
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       const data = await response.json();
       setResult(data);
@@ -615,7 +714,7 @@ export default function App() {
       checkMedicineInteraction(data.summary || '', data.tags || []);
     } catch (err: any) { Alert.alert('Analysis failed', err.message || 'Something went wrong.'); }
     finally { setLoading(false); }
-  }, [imageB64, imageUri, fetchNutrition]);
+  }, [imageB64, imageUri, fetchNutrition, checkMedicineInteraction, uriToBase64]);
 
   const reset = useCallback(() => { setImageUri(null); setImageB64(null); setResult(null); setNutrition(null); setMedicineResult(null); }, []);
   const config = result ? VERDICT_CONFIG[result.verdict] : null;
@@ -719,43 +818,39 @@ export default function App() {
               </View>
             </FadeIn>
           ) : (
-            <FadeIn delay={0}>
-              <View style={styles.previewWrap}>
-                <Image source={{ uri: imageUri! }} style={styles.previewImg} />
-                <LinearGradient colors={['rgba(6,6,4,0)', 'rgba(6,6,4,0.7)']} style={styles.previewOverlay} />
-                {loading && <ScanLine />}
-                {loading && (
-                  <View style={styles.scanBadge}>
-                    <View style={styles.scanBadgeDot} />
-                    <Text style={styles.scanBadgeText}>ANALYZING</Text>
-                  </View>
-                )}
-                <TouchableOpacity style={styles.clearBtn} onPress={reset} activeOpacity={0.8}>
-                  <Ionicons name="close" size={16} color="#fff" />
-                </TouchableOpacity>
-                <View style={[styles.previewCorner, styles.previewCornerTL]} />
-                <View style={[styles.previewCorner, styles.previewCornerTR]} />
-              </View>
-            </FadeIn>
+            <View style={styles.previewWrap}>
+              <Image source={{ uri: imageUri! }} style={styles.previewImg} />
+              <LinearGradient colors={['rgba(6,6,4,0)', 'rgba(6,6,4,0.7)']} style={styles.previewOverlay} />
+              {loading && <ScanLine />}
+              {loading && (
+                <View style={styles.scanBadge}>
+                  <View style={styles.scanBadgeDot} />
+                  <Text style={styles.scanBadgeText}>ANALYZING</Text>
+                </View>
+              )}
+              <TouchableOpacity style={styles.clearBtn} onPress={reset} activeOpacity={0.8}>
+                <Ionicons name="close" size={16} color="#fff" />
+              </TouchableOpacity>
+              <View style={[styles.previewCorner, styles.previewCornerTL]} />
+              <View style={[styles.previewCorner, styles.previewCornerTR]} />
+            </View>
           )}
 
           {imageUri && !result && (
-            <FadeIn delay={80}>
-              <TouchableOpacity style={[styles.analyzeBtn, loading && styles.analyzeBtnLoading]} onPress={analyze} disabled={loading} activeOpacity={0.85}>
-                {loading ? (
-                  <LinearGradient colors={['rgba(212,245,118,0.08)','rgba(212,245,118,0.02)']} style={styles.analyzeBtnInner}>
-                    <ActivityIndicator color="#d4f576" size="small" />
-                    <Text style={styles.analyzeBtnTextLoading}>Processing image…</Text>
-                  </LinearGradient>
-                ) : (
-                  <LinearGradient colors={['rgba(212,245,118,0.95)','rgba(184,223,80,0.9)']} style={styles.analyzeBtnInner}>
-                    <View style={styles.analyzeBtnGlow} />
-                    <Ionicons name="flash" size={18} color="#0a0f05" />
-                    <Text style={styles.analyzeBtnText}>Analyze Freshness</Text>
-                  </LinearGradient>
-                )}
-              </TouchableOpacity>
-            </FadeIn>
+            <TouchableOpacity style={[styles.analyzeBtn, loading && styles.analyzeBtnLoading, loading && styles.analyzeBtnLoadingNoGlow]} onPress={analyze} disabled={loading} activeOpacity={0.85}>
+              {loading ? (
+                <LinearGradient colors={['#07170d', '#07140c']} style={[styles.analyzeBtnInner, styles.processingBarInner]}>
+                    <ActivityIndicator size="small" color="#b9d59a" />
+                  <Text style={[styles.analyzeBtnTextLoading, styles.analyzeBtnTextLoadingMuted]}>Processing image...</Text>
+                </LinearGradient>
+              ) : (
+                <LinearGradient colors={['rgba(212,245,118,0.95)','rgba(184,223,80,0.9)']} style={styles.analyzeBtnInner}>
+                  <View style={styles.analyzeBtnGlow} />
+                  <Ionicons name="flash" size={18} color="#0a0f05" />
+                  <Text style={styles.analyzeBtnText}>Analyze Freshness</Text>
+                </LinearGradient>
+              )}
+            </TouchableOpacity>
           )}
 
           {result && kidsMode && (
@@ -777,11 +872,9 @@ export default function App() {
 
           {result && config && (
             <FadeIn delay={0}>
-              <View style={[styles.resultCard, { borderColor: config.border, shadowColor: config.color }]}>
+              <View style={[styles.resultCard, styles.resultCardNoNeon]}> 
                 <LinearGradient colors={['rgba(255,255,255,0.06)','rgba(255,255,255,0.01)']} style={StyleSheet.absoluteFillObject} />
                 <LinearGradient colors={config.gradient} style={StyleSheet.absoluteFillObject} />
-                {/* Glass shimmer */}
-                <LinearGradient colors={[config.color+'99','transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.resultGlassTopBorder} />
                 {/* Glow blob behind grade */}
                 <View style={[styles.resultGlowBlob, { backgroundColor: config.color }]} />
                 <View style={styles.resultTop}>
@@ -977,11 +1070,15 @@ const styles = StyleSheet.create({
   clearBtn: { position: 'absolute', top: 12, right: 12, width: 30, height: 30, backgroundColor: 'rgba(6,6,4,0.7)', borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   analyzeBtn: { borderRadius: 20, overflow: 'hidden', marginBottom: 24, shadowColor: '#d4f576', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 },
   analyzeBtnLoading: { borderWidth: 1, borderColor: 'rgba(212,245,118,0.15)' },
+  analyzeBtnLoadingNoGlow: { borderColor: 'rgba(176,214,134,0.12)', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 2 },
   analyzeBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 20, position: 'relative', overflow: 'hidden' },
+  processingBarInner: { paddingVertical: 18 },
   analyzeBtnGlow: { position: 'absolute', top: -20, width: 120, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.15)' },
   analyzeBtnText: { color: '#0a0f05', fontSize: 16, fontWeight: '900', letterSpacing: 0.5 },
   analyzeBtnTextLoading: { color: '#d4f576', fontSize: 15, fontWeight: '500' },
+  analyzeBtnTextLoadingMuted: { color: '#8d9a87', fontWeight: '600', letterSpacing: 0.3 },
   resultCard: { borderWidth: 1, borderColor: '#1e2018', borderRadius: 28, overflow: 'hidden', marginBottom: 16, position: 'relative', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 24, elevation: 12 },
+  resultCardNoNeon: { borderColor: 'rgba(255,255,255,0.08)', shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 18, elevation: 8 },
   resultGlassTopBorder: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, zIndex: 10 },
   resultGlowBlob: { position: 'absolute', top: -40, left: -20, width: 140, height: 140, borderRadius: 70, opacity: 0.08 },
   resultTop: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 24 },
@@ -1080,6 +1177,9 @@ const styles = StyleSheet.create({
   medicineAddHint: { fontSize: 12, color: '#3a4030', letterSpacing: 0.3, marginBottom: 4 },
   medicineInputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   medicineInput: { flex: 1, backgroundColor: '#0f0f0d', borderWidth: 1, borderColor: '#2a2c24', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, color: '#e8e5dc', fontSize: 14 },
+  medicineSuggestBox: { marginTop: 10, borderWidth: 1, borderColor: 'rgba(167,139,250,0.2)', borderRadius: 12, backgroundColor: '#0f0f0d', overflow: 'hidden' },
+  medicineSuggestItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(167,139,250,0.12)' },
+  medicineSuggestText: { fontSize: 13, color: '#cfc6e8' },
   medicineAddBtn: { width: 46, height: 46, borderRadius: 12, overflow: 'hidden' },
   medicineAddBtnGrad: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   medicineEmpty: { alignItems: 'center', paddingVertical: 24, gap: 8 },
